@@ -23,6 +23,8 @@ package org.cups4j.operations;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import android.util.Log;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -36,15 +38,15 @@ import java.nio.ByteBuffer;
 import java.security.cert.X509Certificate;
 import java.util.Map;
 
-import javax.net.ssl.HttpsURLConnection;
+//import javax.net.ssl.HttpsURLConnection;
 
 import ch.ethz.vppserver.ippclient.IppResponse;
 import ch.ethz.vppserver.ippclient.IppResult;
 import ch.ethz.vppserver.ippclient.IppTag;
 import ch.ethz.vppserver.schema.ippclient.Attribute;
-import io.github.benoitduffez.cupsprint.HttpConnectionManagement;
-import io.github.benoitduffez.cupsprint.L;
-import io.github.benoitduffez.cupsprint.ssl.AdditionalKeyStoresSSLSocketFactory;
+//import io.github.benoitduffez.cupsprint.HttpConnectionManagement;
+//import io.github.benoitduffez.cupsprint.L;
+//import io.github.benoitduffez.cupsprint.ssl.AdditionalKeyStoresSSLSocketFactory;
 
 public abstract class IppOperation {
     private final static String IPP_MIME_TYPE = "application/ipp";
@@ -197,11 +199,11 @@ public abstract class IppOperation {
             connection.setChunkedStreamingMode(0);
             connection.setRequestProperty("Content-Type", IPP_MIME_TYPE);
 
-            if (url.getProtocol().equals("https")) {
-                HttpConnectionManagement.handleHttpsUrlConnection((HttpsURLConnection) connection);
-            }
-
-            HttpConnectionManagement.handleBasicAuth(url, connection);
+//            if (url.getProtocol().equals("https")) {
+//                HttpConnectionManagement.handleHttpsUrlConnection((HttpsURLConnection) connection);
+//            }
+//
+//            HttpConnectionManagement.handleBasicAuth(url, connection);
 
             byte[] bytes = new byte[ippBuf.limit()];
             ippBuf.get(bytes);
@@ -228,15 +230,16 @@ public abstract class IppOperation {
             ippResult.setHttpStatusResponse(connection.getResponseMessage());
         } catch (Exception e) {
             mLastResponseCode = connection.getResponseCode();
-            L.e("Caught exception while connecting to printer " + url + ": " + e.getLocalizedMessage());
+            Log.w("IPP_ERROR",
+                    "Caught exception while connecting to printer " + url + ": " + e.getLocalizedMessage(), e);
             throw e;
         } finally {
-            if (connection instanceof HttpsURLConnection) {
-                if (((HttpsURLConnection) connection).getSSLSocketFactory() instanceof AdditionalKeyStoresSSLSocketFactory) {
-                    final AdditionalKeyStoresSSLSocketFactory socketFactory = (AdditionalKeyStoresSSLSocketFactory) ((HttpsURLConnection) connection).getSSLSocketFactory();
-                    mServerCerts = socketFactory.getServerCert();
-                }
-            }
+//            if (connection instanceof HttpsURLConnection) {
+//                if (((HttpsURLConnection) connection).getSSLSocketFactory() instanceof AdditionalKeyStoresSSLSocketFactory) {
+//                    final AdditionalKeyStoresSSLSocketFactory socketFactory = (AdditionalKeyStoresSSLSocketFactory) ((HttpsURLConnection) connection).getSSLSocketFactory();
+//                    mServerCerts = socketFactory.getServerCert();
+//                }
+//            }
             connection.disconnect();
         }
 

@@ -22,6 +22,8 @@ package org.cups4j.operations.cups;
 
 import android.support.annotation.NonNull;
 
+import android.util.Log;
+
 import org.cups4j.CupsPrinter;
 import org.cups4j.operations.IppOperation;
 
@@ -34,7 +36,6 @@ import java.util.Map;
 import ch.ethz.vppserver.ippclient.IppResult;
 import ch.ethz.vppserver.schema.ippclient.Attribute;
 import ch.ethz.vppserver.schema.ippclient.AttributeGroup;
-import io.github.benoitduffez.cupsprint.L;
 
 public class CupsGetPrintersOperation extends IppOperation {
     public CupsGetPrintersOperation() {
@@ -53,7 +54,7 @@ public class CupsGetPrintersOperation extends IppOperation {
         IppResult result = request(new URL(url.toString() + path), map);
 
         if (result == null) {
-            L.e("Couldn't get printers from URL: " + url + " with path: " + path);
+            Log.w("CUPS_FAILURE", "Couldn't get printers from URL: " + url + " with path: " + path);
             return printers;
         }
 

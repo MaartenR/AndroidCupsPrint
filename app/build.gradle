@@ -1,21 +1,59 @@
-def keystoreProperties = new Properties()
-try {
-    def keystorePropertiesFile = rootProject.file("signing.properties")
-    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
-} catch (FileNotFoundException e) {
-    println 'signing.properties file was not found, no release builds will be available'
-    // Put dummy values so that the debug builds work
-    keystoreProperties['storeFile'] = rootProject.file('build.gradle') // bogus file, I know
-    keystoreProperties['keyAlias'] = ''
-    keystoreProperties['storePassword'] = ''
-}
-
-apply plugin: 'com.android.application'
-apply plugin: 'io.fabric'
-apply plugin: 'com.github.triplet.play'
+apply plugin: 'com.android.library'
+apply plugin: 'maven-publish'
 
 repositories {
-    maven { url 'https://maven.fabric.io/public' }
+    jcenter()
+}
+
+task sourceJar(type: Jar) {
+    from android.sourceSets.main.java.srcDirs
+    classifier "source"
+}
+
+publishing {
+    publications {
+        cupsprint(MavenPublication) {
+            groupId 'io.github.benoitduffez'
+            artifactId 'cupsprintlib'
+            version '1.0.0'
+
+            artifact bundleRelease
+
+            pom.withXml {
+                asNode().appendNode('description', 'A port of Cups4j to Android')
+                def dependenciesNode = asNode().appendNode('dependencies')
+
+                // List all compile dependencies and write to POM
+                configurations.compile.getAllDependencies().each { Dependency dep ->
+                    if (dep.group == null || dep.version == null || dep.name == null || dep.name == "unspecified")
+                        return // ignore invalid dependencies
+
+                    def dependencyNode = dependenciesNode.appendNode('dependency')
+                    dependencyNode.appendNode('groupId', dep.group)
+                    dependencyNode.appendNode('artifactId', dep.name)
+                    dependencyNode.appendNode('version', dep.version)
+
+                    if (!dep.transitive) {
+                        // If this dependency is transitive, we should force exclude all its dependencies them from the POM
+                        def exclusionNode = dependencyNode.appendNode('exclusions').appendNode('exclusion')
+                        exclusionNode.appendNode('groupId', '*')
+                        exclusionNode.appendNode('artifactId', '*')
+                    } else if (!dep.properties.excludeRules.empty) {
+                        // Otherwise add specified exclude rules
+                        def exclusionsNode = dependencyNode.appendNode('exclusions')
+                        dep.properties.excludeRules.each { ExcludeRule rule ->
+                            def exclusionNode = exclusionsNode.appendNode('exclusion')
+                            exclusionNode.appendNode('groupId', rule.group ?: '*')
+                            exclusionNode.appendNode('artifactId', rule.module ?: '*')
+                        }
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        mavenLocal()
+    }
 }
 
 android {
@@ -28,28 +66,17 @@ android {
     }
 
     defaultConfig {
-        applicationId "io.github.benoitduffez.cupsprint"
         minSdkVersion 19
         targetSdkVersion 25
         versionCode 9
-        versionName "1.4.0"
+        versionName "1.0.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-    }
-
-    signingConfigs {
-        release {
-            keyAlias keystoreProperties['keyAlias']
-            keyPassword keystoreProperties['keyPassword']
-            storeFile rootProject.file(keystoreProperties['storeFile'])
-            storePassword keystoreProperties['storePassword']
-        }
     }
 
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
         }
         debug {
             testCoverageEnabled true
@@ -60,10 +87,6 @@ android {
 dependencies {
     compile 'javax.jmdns:jmdns:3.4.1'
     compile 'com.android.support:appcompat-v7:25.3.0'
-
-    compile('com.crashlytics.sdk.android:crashlytics:2.6.5@aar') {
-        transitive = true;
-    }
 
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
@@ -89,9 +112,4 @@ task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest', 'crea
             "jacoco/testDebugUnitTest.exec",
             "outputs/code-coverage/connected/*coverage.ec"
     ])
-}
-
-play {
-    track = 'beta'
-    jsonFile = rootProject.file('GooglePlayAPI.json')
 }
