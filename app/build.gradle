@@ -14,8 +14,8 @@ publishing {
     publications {
         cupsprint(MavenPublication) {
             groupId 'io.github.benoitduffez'
-            artifactId 'cupsprintlib'
-            version '1.0.0'
+            artifactId 'cupsprint'
+            version '1.4.0-lib-1'
 
             artifact bundleRelease
 
